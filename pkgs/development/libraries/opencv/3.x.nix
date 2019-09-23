@@ -30,6 +30,7 @@
 , enableGPhoto2   ? false, libgphoto2
 , enableDC1394    ? false, libdc1394
 , enableDocs      ? false, doxygen, graphviz-nox
+, enableBuildWorld ? false
 
 , cf-private, AVFoundation, Cocoa, QTKit, VideoDecodeAcceleration, bzip2
 }:
@@ -167,9 +168,9 @@ stdenv.mkDerivation rec {
       ${installExtraFiles face}
     '');
 
-  postConfigure = ''
-    [ -e modules/core/version_string.inc ]
-    echo '"(build info elided)"' > modules/core/version_string.inc
+  postConfigure = "VERSION_FILE=modules/"+(if enableBuildWorld then "world" else "core")+''/version_string.inc
+    [ -e $VERSION_FILE ]
+    echo '"(build info elided)"' > $VERSION_FILE
   '';
 
   buildInputs =
@@ -220,6 +221,7 @@ stdenv.mkDerivation rec {
     "-DBUILD_TESTS=OFF"
     "-DBUILD_PERF_TESTS=OFF"
     "-DBUILD_DOCS=${printEnabled enableDocs}"
+    "-DCMAKE_INSTALL_PREFIX=$out"
     (opencvFlag "IPP" enableIpp)
     (opencvFlag "TIFF" enableTIFF)
     (opencvFlag "JASPER" enableJPEG2K)
@@ -239,6 +241,8 @@ stdenv.mkDerivation rec {
     "-DWITH_LAPACK=OFF"
   ] ++ lib.optionals enablePython [
     "-DOPENCV_SKIP_PYTHON_LOADER=ON"
+  ] ++ lib.optional enableBuildWorld [
+    "-D BUILD_opencv_world=ON"
   ];
 
   enableParallelBuilding = true;
